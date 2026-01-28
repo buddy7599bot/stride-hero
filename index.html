@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>STRIDE — Walk The Future</title>
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&display=swap');
 
@@ -24,7 +25,7 @@ body {
   display: flex; align-items: center; justify-content: center;
   transition: opacity 0.8s ease, visibility 0.8s ease;
 }
-#loader.hidden { opacity: 0; visibility: hidden; }
+#loader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
 #loader span {
   font-size: 2rem; font-weight: 900; letter-spacing: 0.5em;
   background: linear-gradient(90deg, #fff, #888, #fff);
@@ -68,6 +69,42 @@ body {
 /* Three.js canvas */
 #three-canvas {
   position: absolute; inset: 0; z-index: 2;
+}
+
+/* 3D Shoe Model */
+#shoe-3d {
+  position: absolute;
+  z-index: 5;
+  width: clamp(320px, 55vw, 750px);
+  height: clamp(320px, 55vw, 750px);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  animation: shoeReveal 1.5s 0.5s forwards;
+  --poster-color: transparent;
+}
+
+/* Remove model-viewer default styling */
+#shoe-3d::part(default-progress-bar) { display: none; }
+
+@keyframes shoeReveal {
+  0% { opacity: 0; transform: translate(-50%, -40%) scale(0.7); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Glow effect behind shoe */
+.shoe-glow {
+  position: absolute;
+  z-index: 4;
+  width: clamp(300px, 45vw, 600px);
+  height: clamp(200px, 30vw, 400px);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -40%);
+  background: radial-gradient(ellipse, rgba(255,255,255,0.08) 0%, transparent 70%);
+  filter: blur(40px);
+  pointer-events: none;
+  opacity: 0;
+  animation: fadeUp 2s 0.8s forwards;
 }
 
 /* Content */
@@ -156,42 +193,27 @@ body {
   transform: translateY(-3px);
 }
 
-/* Shoe images (positioned via CSS for parallax) */
-.shoe-float {
-  position: absolute; z-index: 5;
+/* Interaction hint */
+.interact-hint {
+  position: absolute;
+  z-index: 11;
+  bottom: 35%; left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.3);
+  opacity: 0;
+  animation: fadeUp 1s 2.5s forwards, hintPulse 3s 3.5s ease-in-out 3;
   pointer-events: none;
-  transition: transform 0.1s ease-out;
 }
-.shoe-main {
-  width: clamp(300px, 50vw, 700px);
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  filter: drop-shadow(0 30px 60px rgba(0,0,0,0.8));
-  opacity: 0;
-  animation: shoeFloat 1.5s 0.3s forwards, shoeHover 4s 2s ease-in-out infinite;
-}
-.shoe-secondary {
-  width: clamp(150px, 20vw, 300px);
-  bottom: 10%; right: 5%;
-  opacity: 0;
-  filter: drop-shadow(0 20px 40px rgba(0,0,0,0.6)) blur(1px);
-  animation: fadeUp 1s 1.5s forwards, shoeHover2 5s 2.5s ease-in-out infinite;
+@keyframes hintPulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.15; }
 }
 
 @keyframes fadeUp {
   to { opacity: 1; transform: translateY(0); }
-}
-@keyframes shoeFloat {
-  0% { opacity: 0; transform: translate(-50%, -30%) scale(0.8) rotate(-10deg); }
-  100% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
-}
-@keyframes shoeHover {
-  0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
-  50% { transform: translate(-50%, -53%) rotate(2deg); }
-}
-@keyframes shoeHover2 {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-15px) rotate(-3deg); }
 }
 
 /* Scroll indicator */
@@ -237,7 +259,7 @@ nav {
 }
 .nav-links a:hover { opacity: 1; }
 
-/* Second section teaser */
+/* Second section */
 #features {
   position: relative; z-index: 10;
   padding: 8rem 3rem;
@@ -284,10 +306,14 @@ nav {
 @media (max-width: 768px) {
   nav { padding: 1rem 1.5rem; }
   .nav-links { display: none; }
-  .shoe-secondary { display: none; }
   .cta-group { flex-direction: column; align-items: center; }
   .cta-btn { width: 80%; justify-content: center; }
   #features { padding: 4rem 1.5rem; }
+  #shoe-3d {
+    width: clamp(280px, 80vw, 400px);
+    height: clamp(280px, 80vw, 400px);
+  }
+  .interact-hint { bottom: 30%; }
 }
 </style>
 </head>
@@ -309,8 +335,28 @@ nav {
   <div id="particle-overlay"></div>
   <canvas id="three-canvas"></canvas>
 
-  <img src="images/shoe-side.png" class="shoe-float shoe-main" alt="STRIDE Shoe" id="shoeMain">
-  <img src="images/shoe-34.png" class="shoe-float shoe-secondary" alt="STRIDE Shoe Angle" id="shoeSecondary">
+  <div class="shoe-glow"></div>
+
+  <!-- 3D Shoe Model -->
+  <model-viewer
+    id="shoe-3d"
+    src="https://modelviewer.dev/shared-assets/models/glTF-Sample-Assets/Models/MaterialsVariantsShoe/glTF-Binary/MaterialsVariantsShoe.glb"
+    camera-controls
+    auto-rotate
+    auto-rotate-delay="0"
+    rotation-per-second="30deg"
+    interaction-prompt="none"
+    camera-orbit="45deg 65deg 0.35m"
+    min-camera-orbit="auto auto 0.25m"
+    max-camera-orbit="auto auto 0.6m"
+    field-of-view="30deg"
+    shadow-intensity="0"
+    exposure="1.2"
+    environment-image="neutral"
+    style="background: transparent;"
+  ></model-viewer>
+
+  <div class="interact-hint">↻ Drag to rotate</div>
 
   <div id="hero-content">
     <h1 class="brand-name">STRIDE</h1>
@@ -427,7 +473,7 @@ const material = new THREE.ShaderMaterial({
 const particles = new THREE.Points(geometry, material);
 scene.add(particles);
 
-// Mouse tracking
+// Mouse tracking for particles
 let mouseX = 0, mouseY = 0;
 let targetMouseX = 0, targetMouseY = 0;
 
@@ -436,17 +482,12 @@ document.addEventListener('mousemove', (e) => {
   targetMouseY = (e.clientY / window.innerHeight - 0.5) * 2;
 });
 
-// Parallax on shoe images
-const shoeMain = document.getElementById('shoeMain');
-const shoeSecondary = document.getElementById('shoeSecondary');
-
-// Gyroscope parallax for mobile
+// Gyroscope for mobile particles
 let gyroX = 0, gyroY = 0;
 let targetGyroX = 0, targetGyroY = 0;
 let hasGyro = false;
 
 if (isMobile && window.DeviceOrientationEvent) {
-  // Request permission on iOS 13+
   const enableGyro = () => {
     if (typeof DeviceOrientationEvent.requestPermission === 'function') {
       DeviceOrientationEvent.requestPermission().then(state => {
@@ -462,15 +503,12 @@ if (isMobile && window.DeviceOrientationEvent) {
   };
 
   function handleOrientation(e) {
-    // gamma: left/right tilt (-90 to 90), beta: front/back tilt (-180 to 180)
-    const gamma = e.gamma || 0; // left-right
-    const beta = e.beta || 0;   // front-back
-    // Normalize to -1..1 range (clamp to ±30 degrees for comfortable range)
+    const gamma = e.gamma || 0;
+    const beta = e.beta || 0;
     targetGyroX = Math.max(-1, Math.min(1, gamma / 30));
-    targetGyroY = Math.max(-1, Math.min(1, (beta - 60) / 30)); // 60° is typical holding angle
+    targetGyroY = Math.max(-1, Math.min(1, (beta - 60) / 30));
   }
 
-  // Auto-enable on Android, tap-to-enable on iOS
   if (typeof DeviceOrientationEvent.requestPermission === 'function') {
     document.addEventListener('touchstart', () => {
       if (!hasGyro) enableGyro();
@@ -480,19 +518,14 @@ if (isMobile && window.DeviceOrientationEvent) {
   }
 }
 
-// Desktop: mouse parallax
-if (!isMobile) {
-  document.addEventListener('mousemove', (e) => {
-    const mx = (e.clientX / window.innerWidth - 0.5);
-    const my = (e.clientY / window.innerHeight - 0.5);
-    if (shoeMain) {
-      shoeMain.style.transform = `translate(calc(-50% + ${mx * 30}px), calc(-50% + ${my * 20}px))`;
-    }
-    if (shoeSecondary) {
-      shoeSecondary.style.transform = `translate(${mx * -20}px, ${my * -15}px)`;
-    }
-  });
-}
+// Hover effect — speed up rotation on hover
+const modelViewer = document.getElementById('shoe-3d');
+modelViewer.addEventListener('mouseenter', () => {
+  modelViewer.setAttribute('rotation-per-second', '90deg');
+});
+modelViewer.addEventListener('mouseleave', () => {
+  modelViewer.setAttribute('rotation-per-second', '30deg');
+});
 
 // Animation loop
 const clock = new THREE.Clock();
@@ -502,21 +535,15 @@ function animate() {
 
   material.uniforms.uTime.value = t;
 
-  mouseX += (targetMouseX - mouseX) * 0.05;
-  mouseY += (targetMouseY - mouseY) * 0.05;
-
-  // Blend gyro input on mobile
   if (isMobile && hasGyro) {
     gyroX += (targetGyroX - gyroX) * 0.08;
     gyroY += (targetGyroY - gyroY) * 0.08;
     material.uniforms.uMouse.value.set(gyroX, gyroY);
     particles.rotation.y = t * 0.02 + gyroX * 0.15;
     particles.rotation.x = gyroY * 0.08;
-    // Move shoe with tilt
-    if (shoeMain) {
-      shoeMain.style.transform = `translate(calc(-50% + ${gyroX * 25}px), calc(-50% + ${gyroY * 15}px))`;
-    }
   } else {
+    mouseX += (targetMouseX - mouseX) * 0.05;
+    mouseY += (targetMouseY - mouseY) * 0.05;
     material.uniforms.uMouse.value.set(mouseX, mouseY);
     particles.rotation.y = t * 0.02 + mouseX * 0.1;
     particles.rotation.x = mouseY * 0.05;
@@ -528,7 +555,6 @@ function animate() {
     pos[i * 3] += velocities[i * 3];
     pos[i * 3 + 1] += velocities[i * 3 + 1];
     pos[i * 3 + 2] += velocities[i * 3 + 2];
-    // Wrap around
     if (Math.abs(pos[i * 3]) > 7.5) velocities[i * 3] *= -1;
     if (Math.abs(pos[i * 3 + 1]) > 7.5) velocities[i * 3 + 1] *= -1;
     if (Math.abs(pos[i * 3 + 2]) > 5) velocities[i * 3 + 2] *= -1;
@@ -546,10 +572,13 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// Remove loader
-window.addEventListener('load', () => {
-  setTimeout(() => document.getElementById('loader').classList.add('hidden'), 500);
+// Remove loader when model is ready
+const loader = document.getElementById('loader');
+modelViewer.addEventListener('load', () => {
+  setTimeout(() => loader.classList.add('hidden'), 300);
 });
+// Fallback in case model takes too long
+setTimeout(() => loader.classList.add('hidden'), 5000);
 </script>
 </body>
 </html>
