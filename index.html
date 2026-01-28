@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STRIDE — Walk The Future</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #0a0a0a;
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Loading screen */
+#loader {
+  position: fixed; inset: 0; z-index: 9999;
+  background: #0a0a0a;
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity 0.8s ease, visibility 0.8s ease;
+}
+#loader.hidden { opacity: 0; visibility: hidden; }
+#loader span {
+  font-size: 2rem; font-weight: 900; letter-spacing: 0.5em;
+  background: linear-gradient(90deg, #fff, #888, #fff);
+  background-size: 200%;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer { 0%{background-position:200%} 100%{background-position:-200%} }
+
+/* Hero Section */
+#hero {
+  position: relative;
+  width: 100%; height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+
+/* Background */
+#hero-bg {
+  position: absolute; inset: 0; z-index: 0;
+  background: url('images/hero-bg.png') center/cover no-repeat;
+  opacity: 0.5;
+}
+#hero-bg::after {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at center, transparent 30%, #0a0a0a 80%);
+}
+
+/* Particle overlay */
+#particle-overlay {
+  position: absolute; inset: 0; z-index: 1;
+  background: url('images/particles.png') center/cover no-repeat;
+  opacity: 0.3; mix-blend-mode: screen;
+  animation: floatParticles 20s ease-in-out infinite;
+}
+@keyframes floatParticles {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-20px) scale(1.05); }
+}
+
+/* Three.js canvas */
+#three-canvas {
+  position: absolute; inset: 0; z-index: 2;
+}
+
+/* Content */
+#hero-content {
+  position: relative; z-index: 10;
+  text-align: center;
+  pointer-events: none;
+}
+
+.brand-name {
+  font-size: clamp(4rem, 12vw, 10rem);
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  line-height: 1;
+  background: linear-gradient(180deg, #ffffff 0%, #888888 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  opacity: 0; transform: translateY(40px);
+  animation: fadeUp 1s 0.5s forwards;
+  text-shadow: 0 0 60px rgba(255,255,255,0.1);
+}
+
+.tagline {
+  font-size: clamp(0.9rem, 2vw, 1.4rem);
+  font-weight: 300;
+  letter-spacing: 0.6em;
+  color: rgba(255,255,255,0.6);
+  margin-top: 1rem;
+  opacity: 0; transform: translateY(30px);
+  animation: fadeUp 1s 0.8s forwards;
+}
+
+.price-tag {
+  display: inline-block;
+  margin-top: 2rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.5);
+  letter-spacing: 0.1em;
+  opacity: 0; transform: translateY(20px);
+  animation: fadeUp 1s 1s forwards;
+}
+.price-tag span {
+  color: #fff;
+  font-size: 1.8rem;
+}
+
+.cta-group {
+  margin-top: 2.5rem;
+  display: flex; gap: 1.2rem;
+  justify-content: center;
+  pointer-events: all;
+  opacity: 0; transform: translateY(20px);
+  animation: fadeUp 1s 1.2s forwards;
+}
+
+.cta-btn {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 1rem 2.5rem;
+  border: none; border-radius: 50px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem; font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  text-decoration: none;
+}
+
+.cta-primary {
+  background: #fff; color: #0a0a0a;
+  box-shadow: 0 0 40px rgba(255,255,255,0.15), 0 0 80px rgba(255,255,255,0.05);
+}
+.cta-primary:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 0 60px rgba(255,255,255,0.3), 0 0 120px rgba(255,255,255,0.1);
+}
+
+.cta-secondary {
+  background: transparent; color: #fff;
+  border: 1px solid rgba(255,255,255,0.25);
+  backdrop-filter: blur(10px);
+}
+.cta-secondary:hover {
+  border-color: rgba(255,255,255,0.6);
+  background: rgba(255,255,255,0.05);
+  transform: translateY(-3px);
+}
+
+/* Shoe images (positioned via CSS for parallax) */
+.shoe-float {
+  position: absolute; z-index: 5;
+  pointer-events: none;
+  transition: transform 0.1s ease-out;
+}
+.shoe-main {
+  width: clamp(300px, 50vw, 700px);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 30px 60px rgba(0,0,0,0.8));
+  opacity: 0;
+  animation: shoeFloat 1.5s 0.3s forwards, shoeHover 4s 2s ease-in-out infinite;
+}
+.shoe-secondary {
+  width: clamp(150px, 20vw, 300px);
+  bottom: 10%; right: 5%;
+  opacity: 0;
+  filter: drop-shadow(0 20px 40px rgba(0,0,0,0.6)) blur(1px);
+  animation: fadeUp 1s 1.5s forwards, shoeHover2 5s 2.5s ease-in-out infinite;
+}
+
+@keyframes fadeUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes shoeFloat {
+  0% { opacity: 0; transform: translate(-50%, -30%) scale(0.8) rotate(-10deg); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+}
+@keyframes shoeHover {
+  0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+  50% { transform: translate(-50%, -53%) rotate(2deg); }
+}
+@keyframes shoeHover2 {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-15px) rotate(-3deg); }
+}
+
+/* Scroll indicator */
+.scroll-indicator {
+  position: absolute; bottom: 2rem; left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+  opacity: 0; animation: fadeUp 1s 2s forwards;
+}
+.scroll-indicator span {
+  font-size: 0.7rem; letter-spacing: 0.3em; color: rgba(255,255,255,0.3);
+  text-transform: uppercase;
+}
+.scroll-line {
+  width: 1px; height: 40px;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.4), transparent);
+  animation: scrollPulse 2s infinite;
+}
+@keyframes scrollPulse {
+  0%, 100% { opacity: 0.3; transform: scaleY(1); }
+  50% { opacity: 1; transform: scaleY(1.3); }
+}
+
+/* Nav */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1.5rem 3rem;
+  mix-blend-mode: difference;
+}
+.nav-logo {
+  font-size: 1.2rem; font-weight: 900; letter-spacing: 0.3em;
+}
+.nav-links {
+  display: flex; gap: 2rem; list-style: none;
+}
+.nav-links a {
+  color: #fff; text-decoration: none;
+  font-size: 0.8rem; letter-spacing: 0.15em;
+  text-transform: uppercase; font-weight: 400;
+  opacity: 0.7; transition: opacity 0.3s;
+}
+.nav-links a:hover { opacity: 1; }
+
+/* Second section teaser */
+#features {
+  position: relative; z-index: 10;
+  padding: 8rem 3rem;
+  background: linear-gradient(to bottom, #0a0a0a, #111);
+  text-align: center;
+}
+.section-title {
+  font-size: clamp(1.5rem, 4vw, 3rem);
+  font-weight: 900; letter-spacing: 0.1em;
+  margin-bottom: 1rem;
+}
+.section-sub {
+  color: rgba(255,255,255,0.5);
+  font-size: 1rem; letter-spacing: 0.05em;
+  max-width: 600px; margin: 0 auto 4rem;
+  line-height: 1.8;
+}
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem; max-width: 1000px; margin: 0 auto;
+}
+.feature-card {
+  padding: 2.5rem; border-radius: 20px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  transition: all 0.4s;
+}
+.feature-card:hover {
+  background: rgba(255,255,255,0.06);
+  transform: translateY(-5px);
+  border-color: rgba(255,255,255,0.12);
+}
+.feature-icon { font-size: 2rem; margin-bottom: 1rem; }
+.feature-card h3 {
+  font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem;
+  letter-spacing: 0.05em;
+}
+.feature-card p {
+  color: rgba(255,255,255,0.4); font-size: 0.9rem; line-height: 1.6;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  nav { padding: 1rem 1.5rem; }
+  .nav-links { display: none; }
+  .shoe-secondary { display: none; }
+  .cta-group { flex-direction: column; align-items: center; }
+  .cta-btn { width: 80%; justify-content: center; }
+  #features { padding: 4rem 1.5rem; }
+}
+</style>
+</head>
+<body>
+
+<div id="loader"><span>STRIDE</span></div>
+
+<nav>
+  <div class="nav-logo">STRIDE</div>
+  <ul class="nav-links">
+    <li><a href="#">Collection</a></li>
+    <li><a href="#">About</a></li>
+    <li><a href="#">Contact</a></li>
+  </ul>
+</nav>
+
+<section id="hero">
+  <div id="hero-bg"></div>
+  <div id="particle-overlay"></div>
+  <canvas id="three-canvas"></canvas>
+
+  <img src="images/shoe-side.png" class="shoe-float shoe-main" alt="STRIDE Shoe" id="shoeMain">
+  <img src="images/shoe-34.png" class="shoe-float shoe-secondary" alt="STRIDE Shoe Angle" id="shoeSecondary">
+
+  <div id="hero-content">
+    <h1 class="brand-name">STRIDE</h1>
+    <p class="tagline">WALK THE FUTURE</p>
+    <div class="price-tag">Starting at <span>$249</span></div>
+    <div class="cta-group">
+      <a href="#" class="cta-btn cta-primary">Shop Now →</a>
+      <a href="#" class="cta-btn cta-secondary">Explore</a>
+    </div>
+  </div>
+
+  <div class="scroll-indicator">
+    <span>Scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<section id="features">
+  <h2 class="section-title">ENGINEERED FOR TOMORROW</h2>
+  <p class="section-sub">Every detail crafted with precision. Every step designed for the future.</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <h3>Adaptive Cushion</h3>
+      <p>AI-responsive foam that adapts to your stride in real-time.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🪶</div>
+      <h3>Ultra Light</h3>
+      <p>Carbon-nano weave upper at only 180g per shoe.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">♻️</div>
+      <h3>Sustainable</h3>
+      <p>85% recycled materials. Zero-waste manufacturing process.</p>
+    </div>
+  </div>
+</section>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+// Three.js particle system
+const canvas = document.getElementById('three-canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.z = 5;
+
+// Particles
+const isMobile = window.innerWidth < 768;
+const particleCount = isMobile ? 800 : 3000;
+const geometry = new THREE.BufferGeometry();
+const positions = new Float32Array(particleCount * 3);
+const velocities = new Float32Array(particleCount * 3);
+const sizes = new Float32Array(particleCount);
+
+for (let i = 0; i < particleCount; i++) {
+  positions[i * 3] = (Math.random() - 0.5) * 15;
+  positions[i * 3 + 1] = (Math.random() - 0.5) * 15;
+  positions[i * 3 + 2] = (Math.random() - 0.5) * 10;
+  velocities[i * 3] = (Math.random() - 0.5) * 0.002;
+  velocities[i * 3 + 1] = (Math.random() - 0.5) * 0.002;
+  velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.001;
+  sizes[i] = Math.random() * 3 + 0.5;
+}
+
+geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+const material = new THREE.ShaderMaterial({
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+  uniforms: {
+    uTime: { value: 0 },
+    uMouse: { value: new THREE.Vector2(0, 0) },
+  },
+  vertexShader: `
+    attribute float size;
+    uniform float uTime;
+    varying float vAlpha;
+    void main() {
+      vec3 pos = position;
+      pos.y += sin(uTime * 0.3 + position.x * 0.5) * 0.15;
+      pos.x += cos(uTime * 0.2 + position.z * 0.5) * 0.1;
+      vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+      gl_PointSize = size * (3.0 / -mvPosition.z);
+      gl_Position = projectionMatrix * mvPosition;
+      vAlpha = smoothstep(0.0, 0.5, size / 3.5) * 0.6;
+    }
+  `,
+  fragmentShader: `
+    varying float vAlpha;
+    void main() {
+      float d = length(gl_PointCoord - 0.5);
+      if (d > 0.5) discard;
+      float alpha = smoothstep(0.5, 0.0, d) * vAlpha;
+      gl_FragColor = vec4(1.0, 1.0, 1.0, alpha);
+    }
+  `
+});
+
+const particles = new THREE.Points(geometry, material);
+scene.add(particles);
+
+// Mouse tracking
+let mouseX = 0, mouseY = 0;
+let targetMouseX = 0, targetMouseY = 0;
+
+document.addEventListener('mousemove', (e) => {
+  targetMouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+  targetMouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+});
+
+// Parallax on shoe images
+const shoeMain = document.getElementById('shoeMain');
+const shoeSecondary = document.getElementById('shoeSecondary');
+
+document.addEventListener('mousemove', (e) => {
+  const mx = (e.clientX / window.innerWidth - 0.5);
+  const my = (e.clientY / window.innerHeight - 0.5);
+  if (shoeMain) {
+    shoeMain.style.transform = `translate(calc(-50% + ${mx * 30}px), calc(-50% + ${my * 20}px))`;
+  }
+  if (shoeSecondary) {
+    shoeSecondary.style.transform = `translate(${mx * -20}px, ${my * -15}px)`;
+  }
+});
+
+// Animation loop
+const clock = new THREE.Clock();
+function animate() {
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+
+  material.uniforms.uTime.value = t;
+
+  mouseX += (targetMouseX - mouseX) * 0.05;
+  mouseY += (targetMouseY - mouseY) * 0.05;
+  material.uniforms.uMouse.value.set(mouseX, mouseY);
+
+  particles.rotation.y = t * 0.02 + mouseX * 0.1;
+  particles.rotation.x = mouseY * 0.05;
+
+  // Drift particles
+  const pos = geometry.attributes.position.array;
+  for (let i = 0; i < particleCount; i++) {
+    pos[i * 3] += velocities[i * 3];
+    pos[i * 3 + 1] += velocities[i * 3 + 1];
+    pos[i * 3 + 2] += velocities[i * 3 + 2];
+    // Wrap around
+    if (Math.abs(pos[i * 3]) > 7.5) velocities[i * 3] *= -1;
+    if (Math.abs(pos[i * 3 + 1]) > 7.5) velocities[i * 3 + 1] *= -1;
+    if (Math.abs(pos[i * 3 + 2]) > 5) velocities[i * 3 + 2] *= -1;
+  }
+  geometry.attributes.position.needsUpdate = true;
+
+  renderer.render(scene, camera);
+}
+animate();
+
+// Resize
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// Remove loader
+window.addEventListener('load', () => {
+  setTimeout(() => document.getElementById('loader').classList.add('hidden'), 500);
+});
+</script>
+</body>
+</html>
