@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>STRIDE — Walk The Future</title>
-<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+<!-- model-viewer removed, using Sketchfab embed -->
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&display=swap');
 
@@ -71,7 +71,7 @@ body {
   position: absolute; inset: 0; z-index: 2;
 }
 
-/* 3D Shoe Model */
+/* 3D Shoe Model (Sketchfab iframe) */
 #shoe-3d {
   position: absolute;
   z-index: 5;
@@ -81,11 +81,11 @@ body {
   transform: translate(-50%, -50%);
   opacity: 0;
   animation: shoeReveal 1.5s 0.5s forwards;
-  --poster-color: transparent;
+  border: none;
+  background: transparent;
+  border-radius: 20px;
+  pointer-events: auto;
 }
-
-/* Remove model-viewer default styling */
-#shoe-3d::part(default-progress-bar) { display: none; }
 
 @keyframes shoeReveal {
   0% { opacity: 0; transform: translate(-50%, -40%) scale(0.7); }
@@ -310,8 +310,8 @@ nav {
   .cta-btn { width: 80%; justify-content: center; }
   #features { padding: 4rem 1.5rem; }
   #shoe-3d {
-    width: clamp(280px, 80vw, 400px);
-    height: clamp(280px, 80vw, 400px);
+    width: clamp(280px, 85vw, 420px);
+    height: clamp(280px, 85vw, 420px);
   }
   .interact-hint { bottom: 30%; }
 }
@@ -337,24 +337,15 @@ nav {
 
   <div class="shoe-glow"></div>
 
-  <!-- 3D Shoe Model -->
-  <model-viewer
+  <!-- 3D Shoe Model (Sketchfab Nike Air Jordan) -->
+  <iframe
     id="shoe-3d"
-    src="https://modelviewer.dev/shared-assets/models/glTF-Sample-Assets/Models/MaterialsVariantsShoe/glTF-Binary/MaterialsVariantsShoe.glb"
-    camera-controls
-    auto-rotate
-    auto-rotate-delay="0"
-    rotation-per-second="30deg"
-    interaction-prompt="none"
-    camera-orbit="45deg 65deg 0.35m"
-    min-camera-orbit="auto auto 0.25m"
-    max-camera-orbit="auto auto 0.6m"
-    field-of-view="30deg"
-    shadow-intensity="0"
-    exposure="1.2"
-    environment-image="neutral"
-    style="background: transparent;"
-  ></model-viewer>
+    title="Nike Air Jordan 3D"
+    src="https://sketchfab.com/models/fd462c530d974f33a523d88a7562f1cf/embed?autostart=1&transparent=1&ui_hint=0&ui_infos=0&ui_stop=0&ui_inspector=0&ui_watermark_link=0&ui_watermark=0&ui_ar=0&ui_help=0&ui_settings=0&ui_vr=0&ui_fullscreen=0&ui_annotations=0&camera=0&preload=1&autospin=0.3"
+    frameborder="0"
+    allow="autoplay; fullscreen; xr-spatial-tracking"
+    allowfullscreen
+  ></iframe>
 
   <div class="interact-hint">↻ Drag to rotate</div>
 
@@ -518,14 +509,8 @@ if (isMobile && window.DeviceOrientationEvent) {
   }
 }
 
-// Hover effect — speed up rotation on hover
-const modelViewer = document.getElementById('shoe-3d');
-modelViewer.addEventListener('mouseenter', () => {
-  modelViewer.setAttribute('rotation-per-second', '90deg');
-});
-modelViewer.addEventListener('mouseleave', () => {
-  modelViewer.setAttribute('rotation-per-second', '30deg');
-});
+// Sketchfab iframe ref
+const shoeIframe = document.getElementById('shoe-3d');
 
 // Animation loop
 const clock = new THREE.Clock();
@@ -572,13 +557,12 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// Remove loader when model is ready
+// Remove loader (Sketchfab handles its own loading)
 const loader = document.getElementById('loader');
-modelViewer.addEventListener('load', () => {
-  setTimeout(() => loader.classList.add('hidden'), 300);
+shoeIframe.addEventListener('load', () => {
+  setTimeout(() => loader.classList.add('hidden'), 500);
 });
-// Fallback in case model takes too long
-setTimeout(() => loader.classList.add('hidden'), 5000);
+setTimeout(() => loader.classList.add('hidden'), 4000);
 </script>
 </body>
 </html>
