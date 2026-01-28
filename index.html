@@ -440,16 +440,59 @@ document.addEventListener('mousemove', (e) => {
 const shoeMain = document.getElementById('shoeMain');
 const shoeSecondary = document.getElementById('shoeSecondary');
 
-document.addEventListener('mousemove', (e) => {
-  const mx = (e.clientX / window.innerWidth - 0.5);
-  const my = (e.clientY / window.innerHeight - 0.5);
-  if (shoeMain) {
-    shoeMain.style.transform = `translate(calc(-50% + ${mx * 30}px), calc(-50% + ${my * 20}px))`;
+// Gyroscope parallax for mobile
+let gyroX = 0, gyroY = 0;
+let targetGyroX = 0, targetGyroY = 0;
+let hasGyro = false;
+
+if (isMobile && window.DeviceOrientationEvent) {
+  // Request permission on iOS 13+
+  const enableGyro = () => {
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission().then(state => {
+        if (state === 'granted') {
+          window.addEventListener('deviceorientation', handleOrientation);
+          hasGyro = true;
+        }
+      }).catch(console.warn);
+    } else {
+      window.addEventListener('deviceorientation', handleOrientation);
+      hasGyro = true;
+    }
+  };
+
+  function handleOrientation(e) {
+    // gamma: left/right tilt (-90 to 90), beta: front/back tilt (-180 to 180)
+    const gamma = e.gamma || 0; // left-right
+    const beta = e.beta || 0;   // front-back
+    // Normalize to -1..1 range (clamp to ±30 degrees for comfortable range)
+    targetGyroX = Math.max(-1, Math.min(1, gamma / 30));
+    targetGyroY = Math.max(-1, Math.min(1, (beta - 60) / 30)); // 60° is typical holding angle
   }
-  if (shoeSecondary) {
-    shoeSecondary.style.transform = `translate(${mx * -20}px, ${my * -15}px)`;
+
+  // Auto-enable on Android, tap-to-enable on iOS
+  if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+    document.addEventListener('touchstart', () => {
+      if (!hasGyro) enableGyro();
+    }, { once: true });
+  } else {
+    enableGyro();
   }
-});
+}
+
+// Desktop: mouse parallax
+if (!isMobile) {
+  document.addEventListener('mousemove', (e) => {
+    const mx = (e.clientX / window.innerWidth - 0.5);
+    const my = (e.clientY / window.innerHeight - 0.5);
+    if (shoeMain) {
+      shoeMain.style.transform = `translate(calc(-50% + ${mx * 30}px), calc(-50% + ${my * 20}px))`;
+    }
+    if (shoeSecondary) {
+      shoeSecondary.style.transform = `translate(${mx * -20}px, ${my * -15}px)`;
+    }
+  });
+}
 
 // Animation loop
 const clock = new THREE.Clock();
@@ -461,10 +504,23 @@ function animate() {
 
   mouseX += (targetMouseX - mouseX) * 0.05;
   mouseY += (targetMouseY - mouseY) * 0.05;
-  material.uniforms.uMouse.value.set(mouseX, mouseY);
 
-  particles.rotation.y = t * 0.02 + mouseX * 0.1;
-  particles.rotation.x = mouseY * 0.05;
+  // Blend gyro input on mobile
+  if (isMobile && hasGyro) {
+    gyroX += (targetGyroX - gyroX) * 0.08;
+    gyroY += (targetGyroY - gyroY) * 0.08;
+    material.uniforms.uMouse.value.set(gyroX, gyroY);
+    particles.rotation.y = t * 0.02 + gyroX * 0.15;
+    particles.rotation.x = gyroY * 0.08;
+    // Move shoe with tilt
+    if (shoeMain) {
+      shoeMain.style.transform = `translate(calc(-50% + ${gyroX * 25}px), calc(-50% + ${gyroY * 15}px))`;
+    }
+  } else {
+    material.uniforms.uMouse.value.set(mouseX, mouseY);
+    particles.rotation.y = t * 0.02 + mouseX * 0.1;
+    particles.rotation.x = mouseY * 0.05;
+  }
 
   // Drift particles
   const pos = geometry.attributes.position.array;
